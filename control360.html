@@ -1,0 +1,934 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#101827">
+<title>Control360</title>
+
+<style>
+:root {
+    --bg:#0b1120;
+    --panel:#151f30;
+    --panel2:#1d2a3d;
+    --text:#f1f5f9;
+    --muted:#9aa9bd;
+    --blue:#3b82f6;
+    --green:#22c55e;
+    --red:#ef4444;
+    --border:#2b3a50;
+}
+
+* { box-sizing:border-box; }
+
+body {
+    margin:0;
+    padding:20px;
+    background:var(--bg);
+    color:var(--text);
+    font-family:Arial,sans-serif;
+}
+
+.container {
+    max-width:1100px;
+    margin:auto;
+}
+
+header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:15px;
+    flex-wrap:wrap;
+    margin-bottom:25px;
+}
+
+.logo {
+    font-size:27px;
+    font-weight:bold;
+}
+
+.logo span { color:var(--blue); }
+
+.subtitle {
+    color:var(--muted);
+    font-size:13px;
+    margin-top:5px;
+}
+
+.card {
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:20px;
+    margin-bottom:20px;
+}
+
+.stats {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:15px;
+}
+
+.stat h3 {
+    color:var(--muted);
+    font-size:13px;
+    font-weight:normal;
+}
+
+.stat strong { font-size:27px; }
+
+.progress-info {
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    margin-bottom:10px;
+    font-size:14px;
+}
+
+.progress {
+    height:12px;
+    background:#29364a;
+    border-radius:20px;
+    overflow:hidden;
+}
+
+.progress-bar {
+    height:100%;
+    width:0%;
+    background:var(--blue);
+    transition:width .3s;
+}
+
+.actions {
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+}
+
+button {
+    border:none;
+    padding:12px 16px;
+    border-radius:9px;
+    cursor:pointer;
+    font-weight:bold;
+    color:white;
+    background:var(--blue);
+}
+
+button:disabled {
+    opacity:.5;
+    cursor:not-allowed;
+}
+
+.success { background:#16803d; }
+.danger { background:#b91c1c; }
+.secondary { background:#334155; }
+
+.small {
+    padding:8px 10px;
+    font-size:12px;
+    margin:2px;
+}
+
+label {
+    display:block;
+    color:var(--muted);
+    font-size:13px;
+    margin:12px 0 6px;
+}
+
+input {
+    width:100%;
+    padding:12px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:var(--panel2);
+    color:white;
+    outline:none;
+}
+
+.form-grid {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:12px;
+}
+
+table {
+    width:100%;
+    border-collapse:collapse;
+    min-width:650px;
+}
+
+th,td {
+    padding:13px 10px;
+    border-bottom:1px solid var(--border);
+    text-align:left;
+    font-size:13px;
+}
+
+th { color:var(--muted); }
+
+.table-wrap { overflow-x:auto; }
+
+.empty {
+    color:var(--muted);
+    text-align:center;
+    padding:25px;
+}
+
+.status {
+    color:var(--green);
+    font-weight:bold;
+}
+
+.status-open {
+    color:#facc15;
+    font-weight:bold;
+}
+
+.modal {
+    display:none;
+    position:fixed;
+    inset:0;
+    background:#000b;
+    justify-content:center;
+    align-items:center;
+    padding:15px;
+    z-index:10;
+}
+
+.modal-content {
+    background:var(--panel);
+    border:1px solid var(--border);
+    padding:22px;
+    border-radius:14px;
+    width:100%;
+    max-width:430px;
+}
+
+footer {
+    color:var(--muted);
+    font-size:12px;
+    text-align:center;
+    padding:15px;
+}
+
+@media(max-width:650px) {
+    body { padding:12px; }
+
+    .stats,.form-grid {
+        grid-template-columns:1fr;
+    }
+
+    .actions button { flex:1; }
+
+    .stat strong { font-size:24px; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<header>
+    <div>
+        <div class="logo">CONTROL<span>360</span></div>
+        <div class="subtitle">Sistema de control de pasantía</div>
+    </div>
+    <div id="estado">Estado: Sin iniciar</div>
+</header>
+
+<section class="card">
+    <div class="stats">
+        <div class="stat">
+            <h3>Horas completadas</h3>
+            <strong id="completadas">0h 00m</strong>
+        </div>
+
+        <div class="stat">
+            <h3>Horas pendientes</h3>
+            <strong id="pendientes">360h 00m</strong>
+        </div>
+
+        <div class="stat">
+            <h3>Días registrados</h3>
+            <strong id="dias">0</strong>
+        </div>
+    </div>
+</section>
+
+<section class="card">
+    <div class="progress-info">
+        <strong>Progreso de pasantía</strong>
+        <strong id="porcentaje">0%</strong>
+    </div>
+
+    <div class="progress">
+        <div class="progress-bar" id="barra"></div>
+    </div>
+</section>
+
+<section class="card">
+    <h3>Control de asistencia</h3>
+    <p class="subtitle">Registra tu entrada y salida del día.</p>
+
+    <div class="actions">
+        <button class="success" id="btnEntrada" onclick="registrarEntrada()">
+            Registrar entrada
+        </button>
+
+        <button class="danger" id="btnSalida" onclick="registrarSalida()" disabled>
+            Registrar salida
+        </button>
+    </div>
+
+    <p id="horaActual" class="subtitle"></p>
+</section>
+
+<section class="card">
+    <h3>Agregar horas manualmente</h3>
+    <p class="subtitle">Registra una jornada que ya hayas realizado.</p>
+
+    <form id="formManual">
+        <div class="form-grid">
+            <div>
+                <label for="fecha">Fecha</label>
+                <input type="date" id="fecha" required>
+            </div>
+
+            <div>
+                <label for="entrada">Hora de entrada</label>
+                <input type="time" id="entrada" required>
+            </div>
+
+            <div>
+                <label for="salida">Hora de salida</label>
+                <input type="time" id="salida" required>
+            </div>
+        </div>
+
+        <br>
+        <button type="submit">Guardar registro manual</button>
+    </form>
+</section>
+
+<section class="card">
+    <h3>Historial de asistencia</h3>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Fecha</th>
+                    <th>Entrada</th>
+                    <th>Salida</th>
+                    <th>Duración</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+
+            <tbody id="historial"></tbody>
+        </table>
+    </div>
+
+    <div id="vacio" class="empty">
+        Todavía no hay registros de asistencia.
+    </div>
+</section>
+
+<section class="card">
+    <h3>Copia de seguridad</h3>
+    <p class="subtitle">Descarga tus registros para conservar una copia.</p>
+
+    <button class="secondary" onclick="exportarDatos()">
+        Descargar copia de seguridad
+    </button>
+</section>
+
+<footer>
+    CONTROL360 · Sistema de seguimiento de pasantía
+</footer>
+
+</div>
+
+<div class="modal" id="modal">
+    <div class="modal-content">
+        <h3>Editar registro</h3>
+
+        <form id="formEditar">
+            <input type="hidden" id="editarId">
+
+            <label for="editarFecha">Fecha</label>
+            <input type="date" id="editarFecha" required>
+
+            <label for="editarEntrada">Hora de entrada</label>
+            <input type="time" id="editarEntrada" required>
+
+            <label for="editarSalida">Hora de salida</label>
+            <input type="time" id="editarSalida">
+
+            <p class="subtitle">
+                Deja la salida vacía si la jornada sigue abierta.
+            </p>
+
+            <br>
+
+            <div class="actions">
+                <button type="submit">Guardar cambios</button>
+
+                <button type="button" class="secondary" onclick="cerrarModal()">
+                    Cancelar
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+
+const META = 360;
+const CLAVE = "control360";
+
+let registros = cargarRegistros();
+
+function generarId() {
+    return Date.now().toString() +
+        Math.random().toString(16).slice(2);
+}
+
+// Cargar registros y asignar ID a los antiguos.
+function cargarRegistros() {
+    try {
+        const datos = JSON.parse(
+            localStorage.getItem(CLAVE) || "[]"
+        );
+
+        if (!Array.isArray(datos)) return [];
+
+        datos.forEach(r => {
+
+            if (!r.id) {
+                r.id = generarId();
+            }
+
+            // Corregir año 0026 cuando la entrada confirma 2026.
+            if (
+                r.fecha &&
+                r.fecha.startsWith("0026-") &&
+                typeof r.entrada === "string" &&
+                r.entrada.startsWith("2026-")
+            ) {
+                r.fecha = "2026-" + r.fecha.slice(5);
+            }
+
+        });
+
+        localStorage.setItem(CLAVE, JSON.stringify(datos));
+
+        return datos;
+
+    } catch {
+        return [];
+    }
+}
+
+function guardar() {
+    localStorage.setItem(CLAVE, JSON.stringify(registros));
+    actualizar();
+}
+
+function fechaHoy() {
+    const ahora = new Date();
+
+    const año = ahora.getFullYear();
+    const mes = String(ahora.getMonth()+1).padStart(2,"0");
+    const dia = String(ahora.getDate()).padStart(2,"0");
+
+    return `${año}-${mes}-${dia}`;
+}
+
+function horaActual() {
+    return new Date().toTimeString().slice(0,5);
+}
+
+// Calcular duración de registros antiguos y nuevos.
+function minutosRegistro(registro) {
+
+    if (
+        !registro ||
+        !registro.entrada ||
+        !registro.salida
+    ) {
+        return 0;
+    }
+
+    if (
+        registro.minutos !== undefined &&
+        registro.minutos !== null &&
+        Number.isFinite(Number(registro.minutos)) &&
+        Number(registro.minutos) > 0
+    ) {
+        return Number(registro.minutos);
+    }
+
+    // Formato ISO completo.
+    if (
+        registro.entrada.includes("T") &&
+        registro.salida.includes("T")
+    ) {
+        const inicio = new Date(registro.entrada);
+        const fin = new Date(registro.salida);
+
+        if (
+            isNaN(inicio.getTime()) ||
+            isNaN(fin.getTime())
+        ) {
+            return 0;
+        }
+
+        return Math.max(
+            0,
+            Math.round((fin-inicio)/60000)
+        );
+    }
+
+    // Formato HH:mm.
+    const inicio = new Date(
+        `${registro.fecha}T${registro.entrada}:00`
+    );
+
+    const fin = new Date(
+        `${registro.fecha}T${registro.salida}:00`
+    );
+
+    if (
+        isNaN(inicio.getTime()) ||
+        isNaN(fin.getTime())
+    ) {
+        return 0;
+    }
+
+    let diferencia = fin-inicio;
+
+    if (diferencia <= 0) {
+        diferencia += 24*60*60000;
+    }
+
+    return Math.round(diferencia/60000);
+}
+
+function calcularMinutos(fecha,entrada,salida) {
+
+    if (!fecha || !entrada || !salida) return 0;
+
+    const inicio = new Date(`${fecha}T${entrada}:00`);
+    const fin = new Date(`${fecha}T${salida}:00`);
+
+    if (
+        isNaN(inicio.getTime()) ||
+        isNaN(fin.getTime())
+    ) {
+        return 0;
+    }
+
+    let diferencia = fin-inicio;
+
+    if (diferencia <= 0) {
+        diferencia += 24*60*60000;
+    }
+
+    return Math.round(diferencia/60000);
+}
+
+function formatoTiempo(minutos) {
+    const horas = Math.floor(minutos/60);
+    const mins = minutos%60;
+
+    return `${horas}h ${String(mins).padStart(2,"0")}m`;
+}
+
+// Mostrar horas ISO o HH:mm.
+function horaVisible(valor) {
+
+    if (!valor) return "--:--";
+
+    if (valor.includes("T")) {
+        const fecha = new Date(valor);
+
+        if (isNaN(fecha.getTime())) return "--:--";
+
+        return fecha.toLocaleTimeString("es-DO", {
+            hour:"2-digit",
+            minute:"2-digit",
+            hour12:false
+        });
+    }
+
+    return valor.slice(0,5);
+}
+
+// Preparar las horas para el formulario de edición.
+function horaParaFormulario(valor) {
+
+    if (!valor) return "";
+
+    if (valor.includes("T")) {
+        const fecha = new Date(valor);
+
+        if (isNaN(fecha.getTime())) return "";
+
+        return (
+            String(fecha.getHours()).padStart(2,"0") +
+            ":" +
+            String(fecha.getMinutes()).padStart(2,"0")
+        );
+    }
+
+    return valor.slice(0,5);
+}
+
+function registroAbierto() {
+    return registros.find(r => !r.salida);
+}
+
+// Registrar entrada.
+function registrarEntrada() {
+
+    const hoy = fechaHoy();
+
+    if (registroAbierto()) {
+        alert("Ya tienes una jornada abierta.");
+        return;
+    }
+
+    if (registros.some(r => r.fecha === hoy)) {
+        alert("Ya existe un registro para hoy. Puedes editarlo o eliminarlo primero.");
+        return;
+    }
+
+    registros.push({
+        id:generarId(),
+        fecha:hoy,
+        entrada:new Date().toISOString(),
+        salida:null
+    });
+
+    guardar();
+}
+
+// Registrar salida.
+function registrarSalida() {
+
+    const abierto = registroAbierto();
+
+    if (!abierto) {
+        alert("No tienes una entrada abierta.");
+        return;
+    }
+
+    if (abierto.entrada.includes("T")) {
+        abierto.salida = new Date().toISOString();
+    } else {
+        abierto.salida = horaActual();
+    }
+
+    const minutos = minutosRegistro(abierto);
+
+    if (minutos <= 0 || minutos > 1440) {
+        abierto.salida = null;
+        alert("La hora de salida no es válida.");
+        return;
+    }
+
+    abierto.minutos = minutos;
+
+    guardar();
+}
+
+// Agregar registro manual.
+document.getElementById("formManual")
+.addEventListener("submit",function(e) {
+
+    e.preventDefault();
+
+    const fecha = document.getElementById("fecha").value;
+    const entrada = document.getElementById("entrada").value;
+    const salida = document.getElementById("salida").value;
+
+    if (fecha > fechaHoy()) {
+        alert("No puedes registrar una fecha futura.");
+        return;
+    }
+
+    if (registros.some(r => r.fecha === fecha)) {
+        alert("Ya existe un registro para esa fecha.");
+        return;
+    }
+
+    const minutos = calcularMinutos(fecha,entrada,salida);
+
+    if (minutos <= 0 || minutos > 1440) {
+        alert("Comprueba las horas introducidas.");
+        return;
+    }
+
+    registros.push({
+        id:generarId(),
+        fecha,
+        entrada,
+        salida,
+        minutos
+    });
+
+    guardar();
+
+    this.reset();
+
+    alert("Registro guardado correctamente.");
+});
+
+// Abrir edición.
+function editarRegistro(id) {
+
+    const r = registros.find(
+        registro => String(registro.id) === String(id)
+    );
+
+    if (!r) {
+        alert("No se encontró el registro.");
+        return;
+    }
+
+    document.getElementById("editarId").value = r.id;
+    document.getElementById("editarFecha").value = r.fecha;
+    document.getElementById("editarEntrada").value =
+        horaParaFormulario(r.entrada);
+
+    document.getElementById("editarSalida").value =
+        horaParaFormulario(r.salida);
+
+    document.getElementById("modal").style.display = "flex";
+}
+
+function cerrarModal() {
+    document.getElementById("modal").style.display = "none";
+}
+
+// Guardar edición.
+document.getElementById("formEditar")
+.addEventListener("submit",function(e) {
+
+    e.preventDefault();
+
+    const id = document.getElementById("editarId").value;
+    const fecha = document.getElementById("editarFecha").value;
+    const entrada = document.getElementById("editarEntrada").value;
+    const salida = document.getElementById("editarSalida").value;
+
+    const r = registros.find(
+        registro => String(registro.id) === String(id)
+    );
+
+    if (!r) {
+        alert("No se encontró el registro que deseas editar.");
+        return;
+    }
+
+    if (fecha > fechaHoy()) {
+        alert("No puedes utilizar una fecha futura.");
+        return;
+    }
+
+    const duplicado = registros.some(registro =>
+        String(registro.id) !== String(id) &&
+        registro.fecha === fecha
+    );
+
+    if (duplicado) {
+        alert("Ya existe otro registro para esa fecha.");
+        return;
+    }
+
+    let minutos = 0;
+
+    if (salida) {
+
+        minutos = calcularMinutos(fecha,entrada,salida);
+
+        if (minutos <= 0 || minutos > 1440) {
+            alert("Comprueba las horas introducidas.");
+            return;
+        }
+    }
+
+    // Actualizar el registro.
+    r.fecha = fecha;
+    r.entrada = entrada;
+    r.salida = salida || null;
+
+    if (salida) {
+        r.minutos = minutos;
+    } else {
+        delete r.minutos;
+    }
+
+    guardar();
+
+    cerrarModal();
+
+    alert("Registro actualizado correctamente.");
+});
+
+// Eliminar registro.
+function eliminarRegistro(id) {
+
+    const confirmar = confirm(
+        "¿Seguro que quieres eliminar este registro?"
+    );
+
+    if (!confirmar) return;
+
+    registros = registros.filter(
+        r => String(r.id) !== String(id)
+    );
+
+    guardar();
+}
+
+// Actualizar pantalla.
+function actualizar() {
+
+    const total = registros.reduce(
+        (suma,r) => suma + minutosRegistro(r),
+        0
+    );
+
+    const completado = Math.min(total,META*60);
+    const pendiente = Math.max(0,META*60-total);
+
+    const porcentaje = Math.min(
+        100,
+        (total/(META*60))*100
+    );
+
+    document.getElementById("completadas").textContent =
+        formatoTiempo(completado);
+
+    document.getElementById("pendientes").textContent =
+        formatoTiempo(pendiente);
+
+    document.getElementById("dias").textContent =
+        registros.length;
+
+    document.getElementById("porcentaje").textContent =
+        porcentaje.toFixed(1)+"%";
+
+    document.getElementById("barra").style.width =
+        porcentaje+"%";
+
+    const abierto = registroAbierto();
+
+    document.getElementById("btnEntrada").disabled =
+        !!abierto;
+
+    document.getElementById("btnSalida").disabled =
+        !abierto;
+
+    document.getElementById("estado").textContent =
+        abierto
+        ? "Estado: Jornada abierta"
+        : "Estado: Sin jornada abierta";
+
+    document.getElementById("estado").className =
+        abierto ? "status-open" : "";
+
+    const cuerpo = document.getElementById("historial");
+
+    cuerpo.innerHTML = "";
+
+    document.getElementById("vacio").style.display =
+        registros.length ? "none" : "block";
+
+    const ordenados = [...registros].sort(
+        (a,b) => b.fecha.localeCompare(a.fecha)
+    );
+
+    ordenados.forEach(r => {
+
+        const fila = document.createElement("tr");
+
+        const duracion = r.salida
+            ? formatoTiempo(minutosRegistro(r))
+            : "En curso";
+
+        const estado = r.salida
+            ? '<span class="status">Completado</span>'
+            : '<span class="status-open">Abierto</span>';
+
+        const idSeguro = String(r.id);
+
+        fila.innerHTML = `
+            <td>${r.fecha}</td>
+            <td>${horaVisible(r.entrada)}</td>
+            <td>${horaVisible(r.salida)}</td>
+            <td>${duracion}</td>
+            <td>${estado}</td>
+            <td>
+                <button class="small" onclick="editarRegistro('${idSeguro}')">
+                    Editar
+                </button>
+
+                <button class="small danger" onclick="eliminarRegistro('${idSeguro}')">
+                    Eliminar
+                </button>
+            </td>
+        `;
+
+        cuerpo.appendChild(fila);
+    });
+}
+
+// Descargar copia de seguridad.
+function exportarDatos() {
+
+    const archivo = new Blob(
+        [JSON.stringify(registros,null,2)],
+        {type:"application/json"}
+    );
+
+    const url = URL.createObjectURL(archivo);
+
+    const enlace = document.createElement("a");
+
+    enlace.href = url;
+    enlace.download = "control360-copia-seguridad.json";
+
+    enlace.click();
+
+    URL.revokeObjectURL(url);
+}
+
+// Reloj.
+function actualizarReloj() {
+
+    document.getElementById("horaActual").textContent =
+        "Fecha y hora actual: " +
+        new Date().toLocaleString("es-DO");
+}
+
+// Inicio.
+document.getElementById("fecha").max = fechaHoy();
+document.getElementById("editarFecha").max = fechaHoy();
+
+actualizarReloj();
+actualizar();
+
+setInterval(actualizarReloj,1000);
+
+</script>
+</body>
+</html>
